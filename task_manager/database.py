@@ -14,14 +14,16 @@ class Database:
     def create_tables(self) -> None:
         connection = self.connect()
 
-        connection.execute("""
+        connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
                 completed INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL
             )
-        """)
+            """
+        )
 
         connection.commit()
         connection.close()
@@ -96,13 +98,20 @@ class Database:
     def delete_task(self, task_id: int) -> None:
         connection = self.connect()
 
-        connection.execute(
-            """
-            DELETE FROM tasks
-            WHERE id = ?
-            """,
-            (task_id,),
-        )
+        try:
+            connection.execute(
+                """
+                DELETE FROM tasks
+                WHERE id = ?
+                """,
+                (task_id,),
+            )
 
-        connection.commit()
-        connection.close()
+            connection.commit()
+
+        except Exception:
+            connection.rollback()
+            raise
+
+        finally:
+            connection.close()
