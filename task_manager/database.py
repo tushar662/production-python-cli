@@ -27,20 +27,20 @@ class Database:
         connection.close()
 
     def add_task(self, task: Task) -> int:
-     with self.connect() as connection:
-        cursor = connection.execute(
-            """
-            INSERT INTO tasks (title, completed, created_at)
-            VALUES (?, ?, ?)
-            """,
-            (
-                task.title,
-                int(task.completed),
-                task.created_at.isoformat(),
-            ),
-        )
+        with self.connect() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO tasks (title, completed, created_at)
+                VALUES (?, ?, ?)
+                """,
+                (
+                    task.title,
+                    int(task.completed),
+                    task.created_at.isoformat(),
+                ),
+            )
 
-        return cursor.lastrowid
+            return cursor.lastrowid
 
     def get_tasks(self) -> list[Task]:
         connection = self.connect()
@@ -74,17 +74,24 @@ class Database:
     def complete_task(self, task_id: int) -> None:
         connection = self.connect()
 
-        connection.execute(
-            """
-            UPDATE tasks
-            SET completed = 1
-            WHERE id = ?
-            """,
-            (task_id,),
-        )
+        try:
+            connection.execute(
+                """
+                UPDATE tasks
+                SET completed = 1
+                WHERE id = ?
+                """,
+                (task_id,),
+            )
 
-        connection.commit()
-        connection.close()
+            connection.commit()
+
+        except Exception:
+            connection.rollback()
+            raise
+
+        finally:
+            connection.close()
 
     def delete_task(self, task_id: int) -> None:
         connection = self.connect()
