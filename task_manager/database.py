@@ -1,4 +1,6 @@
+
 import sqlite3
+import logging
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Iterator
@@ -6,11 +8,16 @@ from typing import Iterator
 from task_manager.models import Task
 
 
+logger = logging.getLogger(__name__)
+
+
 class Database:
     def __init__(self, db_path: str):
         self.db_path = db_path
+        logger.info("Database initialized: %s", db_path)
 
     def connect(self) -> sqlite3.Connection:
+        logger.debug("Opening database connection")
         return sqlite3.connect(self.db_path)
 
     @contextmanager
@@ -20,13 +27,16 @@ class Database:
         try:
             yield connection
             connection.commit()
+            logger.debug("Database transaction committed")
 
         except Exception:
             connection.rollback()
+            logger.exception("Database transaction failed")
             raise
 
         finally:
             connection.close()
+            logger.debug("Database connection closed")
 
     def create_tables(self) -> None:
         with self.get_connection() as connection:
@@ -40,6 +50,8 @@ class Database:
                 )
                 """
             )
+
+        logger.info("Tasks table created or already exists")
 
     def add_task(self, task: Task) -> int:
         with self.get_connection() as connection:
@@ -55,7 +67,10 @@ class Database:
                 ),
             )
 
-            return cursor.lastrowid
+            task_id = cursor.lastrowid
+
+        logger.info("Task created successfully: ID %s", task_id)
+        return task_id
 
     def get_tasks(self) -> list[Task]:
         with self.get_connection() as connection:
@@ -81,7 +96,8 @@ class Database:
 
                 tasks.append(task)
 
-            return tasks
+        logger.info("Retrieved %s tasks", len(tasks))
+        return tasks
 
     def complete_task(self, task_id: int) -> None:
         with self.get_connection() as connection:
@@ -94,6 +110,8 @@ class Database:
                 (task_id,),
             )
 
+        logger.info("Task marked completed: ID %s", task_id)
+
     def delete_task(self, task_id: int) -> None:
         with self.get_connection() as connection:
             connection.execute(
@@ -103,3 +121,5 @@ class Database:
                 """,
                 (task_id,),
             )
+
+        logger.info("Task deleted: ID %s", task_id)
