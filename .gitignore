@@ -1,6 +1,7 @@
 .venv/
 tasks.db
 __pycache__/
+.pytest_cache/
 *.pyc
 logs/
 *.log
