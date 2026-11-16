@@ -46,7 +46,7 @@ def test_add_task_preserves_completed_status(database: Database) -> None:
 def test_complete_task_marks_task_completed(database: Database) -> None:
     task_id = database.add_task(Task(title="Finish tests"))
 
-    database.complete_task(task_id)
+    assert database.complete_task(task_id) is True
 
     retrieved_task = database.get_tasks()[0]
     assert retrieved_task.id == task_id
@@ -56,7 +56,7 @@ def test_complete_task_marks_task_completed(database: Database) -> None:
 def test_delete_task_removes_task(database: Database) -> None:
     task_id = database.add_task(Task(title="Remove this task"))
 
-    database.delete_task(task_id)
+    assert database.delete_task(task_id) is True
 
     assert database.get_tasks() == []
 
@@ -75,7 +75,7 @@ def test_completing_nonexistent_id_does_not_change_tasks(database: Database) -> 
     task_id = database.add_task(Task(title="Keep this task"))
     before = database.get_tasks()
 
-    database.complete_task(task_id + 100)
+    assert database.complete_task(task_id + 100) is False
 
     assert database.get_tasks() == before
 
@@ -84,6 +84,6 @@ def test_deleting_nonexistent_id_does_not_change_tasks(database: Database) -> No
     task_id = database.add_task(Task(title="Keep this task"))
     before = database.get_tasks()
 
-    database.delete_task(task_id + 100)
+    assert database.delete_task(task_id + 100) is False
 
     assert database.get_tasks() == before

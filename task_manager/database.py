@@ -99,9 +99,9 @@ class Database:
         logger.info("Retrieved %s tasks", len(tasks))
         return tasks
 
-    def complete_task(self, task_id: int) -> None:
+    def complete_task(self, task_id: int) -> bool:
         with self.get_connection() as connection:
-            connection.execute(
+            cursor = connection.execute(
                 """
                 UPDATE tasks
                 SET completed = 1
@@ -110,11 +110,17 @@ class Database:
                 (task_id,),
             )
 
-        logger.info("Task marked completed: ID %s", task_id)
+            task_updated = cursor.rowcount > 0
 
-    def delete_task(self, task_id: int) -> None:
+        if task_updated:
+            logger.info("Task marked completed: ID %s", task_id)
+        else:
+            logger.info("No task found to mark completed: ID %s", task_id)
+        return task_updated
+
+    def delete_task(self, task_id: int) -> bool:
         with self.get_connection() as connection:
-            connection.execute(
+            cursor = connection.execute(
                 """
                 DELETE FROM tasks
                 WHERE id = ?
@@ -122,4 +128,10 @@ class Database:
                 (task_id,),
             )
 
-        logger.info("Task deleted: ID %s", task_id)
+            task_deleted = cursor.rowcount > 0
+
+        if task_deleted:
+            logger.info("Task deleted: ID %s", task_id)
+        else:
+            logger.info("No task found to delete: ID %s", task_id)
+        return task_deleted
