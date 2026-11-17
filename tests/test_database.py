@@ -1,3 +1,7 @@
+import sqlite3
+
+import pytest
+
 from task_manager.database import Database
 from task_manager.models import Task
 
@@ -87,3 +91,39 @@ def test_deleting_nonexistent_id_does_not_change_tasks(database: Database) -> No
     assert database.delete_task(task_id + 100) is False
 
     assert database.get_tasks() == before
+
+
+def test_get_connection_rolls_back_and_reraises_exception(
+    database: Database,
+) -> None:
+    with pytest.raises(RuntimeError, match="force rollback"):
+        with database.get_connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO tasks (title, completed, created_at)
+                VALUES (?, ?, ?)
+                """,
+                ("This should be rolled back", 0, "2025-01-01T00:00:00"),
+            )
+            raise RuntimeError("force rollback")
+
+    assert database.get_tasks() == []
+
+
+def test_get_connection_closes_connection(database: Database) -> None:
+    with database.get_connection() as connection:
+        connection.execute("SELECT 1")
+
+    with pytest.raises(sqlite3.ProgrammingError):
+        connection.execute("SELECT 1")
+
+
+def test_get_connection_closes_connection_after_exception(
+    database: Database,
+) -> None:
+    with pytest.raises(RuntimeError, match="force close"):
+        with database.get_connection() as connection:
+            raise RuntimeError("force close")
+
+    with pytest.raises(sqlite3.ProgrammingError):
+        connection.execute("SELECT 1")
